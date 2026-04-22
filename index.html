@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>XAU/USD — ICT Scanner</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{--bg:#0a0a0a;--bg2:#141414;--bg3:#1c1c1c;--bg4:#242424;--border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);--text:#e2e2e2;--text2:#777;--text3:#404040;--green:#1D9E75;--red:#D85A30;--blue:#378ADD;--gold:#EF9F27;--amber:#BA7517;--purple:#7F77DD;--mono:'Courier New',monospace}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;min-height:100vh;overscroll-behavior:none}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;gap:8px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-icon{width:28px;height:28px;border-radius:7px;background:var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.logo-name{font-weight:700;font-size:13px}
+.logo-sub{font-size:9px;color:var(--text2);font-family:var(--mono)}
+.hdr-r{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.price-val{font-family:var(--mono);font-weight:700;font-size:18px}
+.price-t{font-size:9px;color:var(--text3);font-family:var(--mono)}
+.badge{padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);font-weight:600;border:1px solid;white-space:nowrap}
+.dot-wrap{display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dot.pulse{animation:pulse 1.4s ease infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.15}}
+
+/* ── Buttons ── */
+.btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:12px;font-weight:500;font-family:var(--mono);transition:all .13s;white-space:nowrap}
+.btn:hover{background:var(--bg4)}
+.btn:active{transform:scale(.97)}
+.btn-gold{background:var(--gold);color:#000;border-color:var(--gold);font-weight:700}
+.btn-gold:hover{opacity:.84}
+.btn-stop{border-color:rgba(216,90,48,.4);color:var(--red)}
+.btn-stop:hover{background:rgba(216,90,48,.09)}
+.btn-sm{padding:5px 9px;font-size:11px}
+.btn-green{border-color:rgba(29,158,117,.4);color:var(--green)}
+.btn-green:hover{background:rgba(29,158,117,.09)}
+
+/* ── Tabs ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);padding:0 12px;background:var(--bg2);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;cursor:pointer;padding:10px 12px;font-size:11px;font-weight:500;border-bottom:2px solid transparent;color:var(--text2);transition:all .13s;font-family:var(--mono);white-space:nowrap}
+.tab.on{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ── Layout ── */
+.content{padding:13px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--bg2);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.card-head{padding:9px 13px;border-bottom:1px solid var(--border);font-weight:600;font-size:11px;display:flex;align-items:center;gap:7px}
+.card-body{padding:12px 13px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:9px}
+.row label{width:145px;flex-shrink:0;font-size:11px;color:var(--text2)}
+input,select{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:7px 9px;border-radius:8px;font-size:12px;font-family:var(--mono);outline:none;width:100%;transition:border-color .13s}
+input:focus,select:focus{border-color:var(--gold)}
+input::placeholder{color:var(--text3)}
+select option{background:#1c1c1c}
+.hint{font-size:10px;color:var(--text3);font-family:var(--mono);line-height:1.8;padding:8px 10px;background:var(--bg3);border-radius:8px}
+
+/* ── Session cards ── */
+.sess-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sess-card{padding:10px 12px;border-radius:10px;border:1px solid}
+
+/* ── Signal cards ── */
+.sig-card{background:var(--bg2);border-radius:11px;padding:12px;border:1px solid;animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.sig-2col{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.sig-box{background:var(--bg3);padding:8px 10px;border-radius:8px}
+.sig-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-family:var(--mono);margin-bottom:3px}
+.sig-val{font-size:12px;font-weight:700;font-family:var(--mono)}
+.sig-sub{font-size:10px;color:var(--text2);font-family:var(--mono)}
+
+/* ── R/R Calculator ── */
+.rr-result{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rr-metric{background:var(--bg3);border-radius:10px;padding:11px 13px;border:1px solid var(--border)}
+.rr-metric-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);font-family:var(--mono);margin-bottom:5px}
+.rr-metric-val{font-size:18px;font-weight:700;font-family:var(--mono)}
+.rr-metric-sub{font-size:10px;color:var(--text2);font-family:var(--mono);margin-top:2px}
+.rr-big{grid-column:1/-1;background:var(--bg3);border-radius:10px;padding:13px;border:1px solid;display:flex;align-items:center;justify-content:center;gap:10px}
+
+/* ── Calendar ── */
+.cal-day{background:var(--bg2);border-radius:11px;border:1px solid var(--border);overflow:hidden}
+.cal-day-head{padding:8px 13px;background:var(--bg3);font-weight:700;font-size:11px;font-family:var(--mono);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.cal-evt{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:9px}
+.cal-evt:last-child{border-bottom:none}
+.cal-time{font-family:var(--mono);font-size:10px;color:var(--text2);width:40px;flex-shrink:0;padding-top:2px}
+.cal-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+
+/* ── History ── */
+.hist-item{background:var(--bg2);border-radius:10px;padding:10px 12px;border:1px solid;display:flex;align-items:center;gap:10px}
+.hist-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── Log ── */
+.log-line{display:flex;gap:9px;padding:4px 7px;border-radius:4px;font-family:var(--mono);font-size:10px;border-left:2px solid}
+.log-ts{color:var(--text3);flex-shrink:0;width:58px}
+
+/* ── Chart ── */
+#chart-wrap{border-radius:11px;overflow:hidden;border:1px solid var(--border);height:420px;position:relative;background:var(--bg)}
+#lw-chart{width:100%;height:100%}
+.chart-legend{position:absolute;top:8px;left:10px;z-index:5;display:flex;gap:6px;flex-wrap:wrap}
+.chart-leg-item{display:flex;align-items:center;gap:4px;font-size:9px;font-family:var(--mono);background:rgba(0,0,0,.65);padding:2px 7px;border-radius:4px;color:#888}
+
+.empty{text-align:center;padding:50px 20px;color:var(--text2);font-family:var(--mono);font-size:11px;line-height:2.1}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>
+// ═══════════════════════════════════════════
+// SESSIONS
+// ═══════════════════════════════════════════
+const SESS={
+  asia:{name:'Phiên Á', label:'Tokyo',    open:7,  close:13, color:'#378ADD',bg:'rgba(55,138,221,.09)', border:'rgba(55,138,221,.28)'},
+  eu:  {name:'Phiên Âu',label:'London',   open:13, close:21, color:'#1D9E75',bg:'rgba(29,158,117,.09)', border:'rgba(29,158,117,.28)'},
+  us:  {name:'Phiên Mỹ',label:'New York', open:19, close:3,  color:'#BA7517',bg:'rgba(186,117,23,.09)', border:'rgba(186,117,23,.28)'}
+};
+
+function vnHour(){const u=new Date().getUTCHours()+7;return u>=24?u-24:u;}
+function getSession(){
+  const h=vnHour();
+  if(h>=SESS.us.open||h<SESS.us.close)return'us';
+  if(h>=SESS.eu.open&&h<SESS.eu.close)return'eu';
+  if(h>=SESS.asia.open&&h<SESS.asia.close)return'asia';
+  return null;
+}
+function sessionBadge(){
+  const k=getSession();
+  if(k)return{...SESS[k],key:k};
+  const h=vnHour();
+  const wait=(h>=3&&h<7)?7-h:'?';
+  return{name:`Đóng — còn ${wait}h`,color:'#444',bg:'rgba(255,255,255,.02)',border:'rgba(255,255,255,.08)',key:null};
+}
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+const STORAGE_KEYS={tdKey:'td_key',tf:'td_tf',poll:'td_poll',account:'rr_account',riskPct:'rr_risk',signals:'signal_history'};
+
+function ls(k,def=''){return localStorage.getItem(STORAGE_KEYS[k])||def;}
+function lsSave(k,v){localStorage.setItem(STORAGE_KEYS[k],typeof v==='object'?JSON.stringify(v):String(v));}
+
+const st={
+  tdKey:ls('tdKey'),
+  tf:ls('tf','15min'),
+  pollMin:parseInt(ls('poll','5')),
+  sessionOnly:true,
+  running:false,timer:null,
+  price:null,priceDir:null,prev:null,lastCheck:null,
+  signals:[],
+  calEvents:[],calLoading:false,calError:'',
+  tab:'setup',status:'idle',
+  lwChart:null,candleSeries:null,chartCandles:[],
+  // R/R calc
+  rr:{entry:'',sl:'',tp:'',account:ls('account','10000'),riskPct:ls('riskPct','1')},
+  // History filter
+  histFilter:'all',
+  logs:[]
+};
+
+// Load saved signal history
+try{
+  const saved=localStorage.getItem(STORAGE_KEYS.signals);
+  if(saved)st.signals=JSON.parse(saved).map(s=>({...s,time:new Date(s.time)}));
+}catch(e){}
+
+function saveSignals(){
+  try{lsSave('signals',st.signals.slice(0,200));}catch(e){}
+}
+
+// ═══════════════════════════════════════════
+// ICT ANALYSIS
+// ═══════════════════════════════════════════
+function toCandles(vals){
+  return[...vals].reverse().map(v=>({
+    time:Math.floor(new Date(v.datetime.replace(' ','T')+'Z').getTime()/1000),
+    o:+v.open,h:+v.high,l:+v.low,c:+v.close
+  }));
+}
+function getPivots(arr,s=3){
+  const H=[],L=[];
+  for(let i=s;i<arr.length-s;i++){
+    let ih=true,il=true;
+    for(let j=i-s;j<=i+s;j++){
+      if(j===i)continue;
+      if(arr[j].h>=arr[i].h)ih=false;
+      if(arr[j].l<=arr[i].l)il=false;
+    }
+    if(ih)H.push({i,p:arr[i].h,t:arr[i].time});
+    if(il)L.push({i,p:arr[i].l,t:arr[i].time});
+  }
+  return{H,L};
+}
+function analyze(arr){
+  if(arr.length<15)return null;
+  const base=arr.slice(0,-3);
+  const{H,L}=getPivots(base,3);
+  const last=arr[arr.length-1];
+  let sweep=null;
+  for(const h of H.slice(-6)){if(last.h>h.p&&last.c<h.p){sweep={type:'BSL',dir:'bear',swept:h.p,t:h.t};break;}}
+  if(!sweep)for(const l of L.slice(-6)){if(last.l<l.p&&last.c>l.p){sweep={type:'SSL',dir:'bull',swept:l.p,t:l.t};break;}}
+  if(!sweep)return null;
+  const fvgs=[];
+  for(let i=2;i<arr.length;i++){
+    const a=arr[i-2],c=arr[i];
+    if(sweep.dir==='bull'&&c.l>a.h)fvgs.push({dir:'bull',top:c.l,bot:a.h,i,t:c.time});
+    if(sweep.dir==='bear'&&c.h<a.l)fvgs.push({dir:'bear',top:a.l,bot:c.h,i,t:c.time});
+  }
+  const recent=fvgs.filter(f=>f.i>=arr.length-12);
+  if(!recent.length)return null;
+  const fvg=recent[recent.length-1];
+  const ifvgConfirmed=(
+    (fvg.dir==='bull'&&last.l<=fvg.top&&last.h>=fvg.bot)||
+    (fvg.dir==='bear'&&last.h>=fvg.bot&&last.l<=fvg.top)
+  );
+  return{sweep,fvg,ifvgConfirmed,lastTime:last.time};
+}
+
+// ═══════════════════════════════════════════
+// R/R CALCULATOR
+// ═══════════════════════════════════════════
+function calcRR(){
+  const e=parseFloat(st.rr.entry);
+  const sl=parseFloat(st.rr.sl);
+  const tp=parseFloat(st.rr.tp);
+  const acc=parseFloat(st.rr.account)||10000;
+  const riskPct=parseFloat(st.rr.riskPct)||1;
+  if(!e||!sl||!tp||isNaN(e)||isNaN(sl)||isNaN(tp))return null;
+  const slDist=Math.abs(e-sl);
+  const tpDist=Math.abs(tp-e);
+  if(slDist===0)return null;
+  const rrRatio=tpDist/slDist;
+  const dollarRisk=acc*(riskPct/100);
+  // XAUUSD: 1 standard lot = 100 oz → $1 move = $100
+  const lotSize=dollarRisk/(slDist*100);
+  const dollarProfit=tpDist*100*lotSize;
+  const bull=tp>e;
+  const direction=bull?'LONG':'SHORT';
+  const validDir=(bull&&sl<e)||((!bull)&&sl>e);
+  return{slDist,tpDist,rrRatio,dollarRisk,lotSize,dollarProfit,bull,direction,validDir};
+}
+
+function fillRRFromSignal(sig){
+  const bull=sig.sweep.dir==='bull';
+  st.rr.entry=sig.price.toFixed(2);
+  st.rr.sl=sig.sweep.swept.toFixed(2);
+  // TP = FVG size projected from entry × 2 as default
+  const tpDist=Math.abs(sig.fvg.top-sig.fvg.bot)*3;
+  st.rr.tp=bull?(sig.price+tpDist).toFixed(2):(sig.price-tpDist).toFixed(2);
+  st.tab='rr';
+  render();
+}
+
+// ═══════════════════════════════════════════
+// LOGGER
+// ═══════════════════════════════════════════
+function log(msg,type='info'){
+  const ts=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  st.logs.unshift({ts,msg,type});
+  if(st.logs.length>150)st.logs.length=150;
+}
+
+// ═══════════════════════════════════════════
+// ECONOMIC CALENDAR
+// ═══════════════════════════════════════════
+const GOLD_HIGH=['federal reserve','interest rate','fomc','cpi','consumer price','core cpi','pce','nonfarm','non-farm','powell','core inflation','fed funds'];
+const GOLD_MED=['gdp','retail sales','ism','pmi','jobless','unemployment','ecb','boe','boj','bank of england','bank of japan','ppi','producer price','trade balance'];
+
+function goldRisk(e){
+  const n=(e.title||'').toLowerCase();
+  if(e.impact==='High'||GOLD_HIGH.some(k=>n.includes(k)))return'high';
+  if(e.impact==='Medium'||GOLD_MED.some(k=>n.includes(k)))return'medium';
+  return'low';
+}
+function isRelevant(e){
+  const c=(e.country||'').toUpperCase();
+  const r=goldRisk(e);
+  if(r==='high')return true;
+  if(r==='medium'&&['USD','EUR','GBP','JPY','CHF'].includes(c))return true;
+  return false;
+}
+function parseFFDate(dateStr){
+  try{
+    const d=new Date(dateStr);
+    return{
+      date:d.toISOString().split('T')[0],
+      vnTime:new Date(d.getTime()+7*3600000).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})
+    };
+  }catch{return{date:'',vnTime:'--:--'};}
+}
+
+async function fetchCalendar(){
+  st.calLoading=true;st.calError='';render();
+  try{
+    const resp=await fetch('/api/calendar');
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    if(!Array.isArray(data))throw new Error(data.error||'Dữ liệu không hợp lệ');
+    const filtered=data.filter(isRelevant);
+    filtered.forEach(e=>{const p=parseFFDate(e.date);e._date=p.date;e._vnTime=p.vnTime;});
+    filtered.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+    st.calEvents=filtered;
+    log(`Tải ${filtered.length} sự kiện từ ForexFactory`,'success');
+  }catch(e){
+    st.calError=e.message;
+    log('Calendar lỗi: '+e.message,'error');
+  }
+  st.calLoading=false;render();
+}
+
+// ═══════════════════════════════════════════
+// CHART
+// ═══════════════════════════════════════════
+function buildChart(candles,signals){
+  const wrap=document.getElementById('lw-chart');
+  if(!wrap||!window.LightweightCharts)return;
+  if(st.lwChart){try{st.lwChart.remove();}catch(e){}st.lwChart=null;}
+
+  st.lwChart=LightweightCharts.createChart(wrap,{
+    width:wrap.clientWidth,height:wrap.clientHeight||420,
+    layout:{background:{color:'#0a0a0a'},textColor:'#555'},
+    grid:{vertLines:{color:'rgba(255,255,255,.03)'},horzLines:{color:'rgba(255,255,255,.03)'}},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale:{borderColor:'rgba(255,255,255,.07)'},
+    timeScale:{borderColor:'rgba(255,255,255,.07)',timeVisible:true,secondsVisible:false}
+  });
+
+  st.candleSeries=st.lwChart.addCandlestickSeries({
+    upColor:'#1D9E75',downColor:'#D85A30',
+    borderUpColor:'#1D9E75',borderDownColor:'#D85A30',
+    wickUpColor:'rgba(29,158,117,.6)',wickDownColor:'rgba(216,90,48,.6)'
+  });
+  st.candleSeries.setData(candles.map(c=>({time:c.time,open:c.o,high:c.h,low:c.l,close:c.c})));
+
+  const markers=[];
+  signals.slice(0,5).forEach(sig=>{
+    const bull=sig.sweep.dir==='bull';
+    const C=bull?'#1D9E75':'#D85A30';
+    st.candleSeries.createPriceLine({price:sig.fvg.top,color:C,lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:`FVG ${bull?'▲':'▼'} top`});
+    st.candleSeries.createPriceLine({price:sig.fvg.bot,color:C,lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:false});
+    st.candleSeries.createPriceLine({price:sig.sweep.swept,color:'rgba(239,159,39,.5)',lineWidth:1,lineStyle:LightweightCharts.LineStyle.SparseDotted,axisLabelVisible:true,title:sig.sweep.type});
+    markers.push({time:sig.lastTime,position:bull?'belowBar':'aboveBar',color:C,shape:bull?'arrowUp':'arrowDown',text:sig.ifvgConfirmed?`${sig.sweep.type} iFVG✓`:`${sig.sweep.type}+FVG`,size:1});
+  });
+  if(markers.length)st.candleSeries.setMarkers(markers.sort((a,b)=>a.time-b.time));
+  st.lwChart.timeScale().fitContent();
+
+  const ro=new ResizeObserver(()=>{if(st.lwChart&&wrap.offsetWidth>0)st.lwChart.resize(wrap.offsetWidth,wrap.offsetHeight||420);});
+  ro.observe(wrap);
+}
+
+async function loadChartData(){
+  if(!st.tdKey)return;
+  try{
+    const resp=await fetch(`/api/candles?tf=${st.tf}&apikey=${st.tdKey}&size=150`);
+    const data=await resp.json();
+    if(!data.values)throw new Error(data.message||'No data');
+    st.chartCandles=toCandles(data.values);
+    buildChart(st.chartCandles,st.signals);
+  }catch(e){log('Chart lỗi: '+e.message,'error');}
+}
+
+// ═══════════════════════════════════════════
+// SCAN
+// ═══════════════════════════════════════════
+async function check(){
+  if(!st.tdKey){log('Chưa nhập API key!','error');render();return;}
+  const sess=getSession();
+  if(st.sessionOnly&&!sess){
+    st.status=st.running?'waiting':'idle';
+    log(`Ngoài phiên (${vnHour()}h VN) — bỏ qua`,'info');
+    render();return;
+  }
+  st.status='checking';render();
+  try{
+    const resp=await fetch(`/api/candles?tf=${st.tf}&apikey=${st.tdKey}&size=80`);
+    const data=await resp.json();
+    if(data.status==='error'||!data.values)throw new Error(data.message||'API error');
+    const arr=toCandles(data.values);
+    const cur=arr[arr.length-1].c;
+    st.priceDir=st.prev?(cur>st.prev?'up':cur<st.prev?'down':null):null;
+    st.prev=cur;st.price=cur;st.lastCheck=new Date();st.chartCandles=arr;
+    const res=analyze(arr);
+    if(res){
+      const sig={id:Date.now(),time:new Date(),price:cur,sess:sess||'?',tf:st.tf,...res};
+      // Avoid duplicate within 15 min
+      const isDup=st.signals.length>0&&(Date.now()-new Date(st.signals[0].time).getTime())<15*60*1000&&st.signals[0].sweep.type===res.sweep.type;
+      if(!isDup){
+        st.signals.unshift(sig);
+        if(st.signals.length>200)st.signals.length=200;
+        saveSignals();
+        st.status='alert';
+        const bull=res.sweep.dir==='bull';
+        log(`SIGNAL! ${bull?'BULLISH':'BEARISH'} @ $${cur.toFixed(2)}${res.ifvgConfirmed?' | iFVG ✓':''}${sess?' | '+SESS[sess].name:''}`, 'signal');
+        if(Notification.permission==='granted'){
+          new Notification(`⚡ XAU/USD — ${bull?'BULLISH':'BEARISH'}${res.ifvgConfirmed?' iFVG✓':''}`,{
+            body:`${res.sweep.type} @ $${res.sweep.swept.toFixed(2)}\nFVG: $${res.fvg.bot.toFixed(2)}–$${res.fvg.top.toFixed(2)}\n${res.ifvgConfirmed?'iFVG xác nhận!':'Đợi iFVG...'}`
+          });
+        }
+        if(st.tab==='chart'&&st.lwChart)buildChart(arr,st.signals);
+      }
+    }else{
+      st.status=st.running?'ok':'idle';
+      log(`$${cur.toFixed(2)} — ${sess?SESS[sess].name:'Ngoài phiên'} — không có setup`,'info');
+    }
+  }catch(e){st.status='error';log('Lỗi: '+e.message,'error');}
+  render();
+}
+
+async function start(){
+  if(Notification.permission==='default')await Notification.requestPermission();
+  localStorage.setItem(STORAGE_KEYS.tdKey,st.tdKey);
+  localStorage.setItem(STORAGE_KEYS.tf,st.tf);
+  localStorage.setItem(STORAGE_KEYS.poll,st.pollMin);
+  st.running=true;st.status='ok';
+  log('Bắt đầu giám sát — Phiên Á + Âu + Mỹ','success');
+  check();
+  st.timer=setInterval(check,parseInt(st.pollMin||5)*60*1000);
+  render();
+}
+function stop(){clearInterval(st.timer);st.running=false;st.status='idle';log('Đã dừng.','info');render();}
+
+// ═══════════════════════════════════════════
+// RENDER HELPERS
+// ═══════════════════════════════════════════
+const SM={idle:{dot:'#333',label:'Chờ'},waiting:{dot:'#378ADD',label:'Đợi phiên...'},checking:{dot:'#EF9F27',label:'Đang quét...'},ok:{dot:'#1D9E75',label:'Đang giám sát'},alert:{dot:'#EF9F27',label:'Có tín hiệu!'},error:{dot:'#D85A30',label:'Lỗi'}};
+
+function accentBar(color){return`<span style="width:3px;height:12px;background:${color};border-radius:2px;display:inline-block"></span>`;}
+
+function sigCardHTML(sig,compact=false){
+  const bull=sig.sweep.dir==='bull';
+  const C=bull?'#1D9E75':'#D85A30';
+  const bg=bull?'rgba(29,158,117,.08)':'rgba(216,90,48,.08)';
+  const bdr=bull?'rgba(29,158,117,.28)':'rgba(216,90,48,.28)';
+  const sInfo=SESS[sig.sess]||{};
+  const ifvgBadge=sig.ifvgConfirmed
+    ?`<span style="font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:10px;background:rgba(239,159,39,.15);color:var(--gold);font-weight:700">iFVG ✓</span>`
+    :`<span style="font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:10px;background:rgba(255,255,255,.04);color:#555">Đợi iFVG</span>`;
+  return`<div class="sig-card" style="border-color:${bdr};border-left:3px solid ${C}">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${compact?'7':'10'}px">
+  <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+    <span style="font-weight:700;font-size:12px;color:${C}">${bull?'BULLISH':'BEARISH'}</span>
+    <span style="font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:10px;background:${bg};color:${C}">${sInfo.name||sig.sess}</span>
+    ${ifvgBadge}
+    <span style="font-size:9px;font-family:var(--mono);color:var(--text3)">${sig.tf||''}</span>
+  </div>
+  <div style="text-align:right">
+    <div style="font-family:var(--mono);font-weight:700;font-size:15px">$${sig.price.toFixed(2)}</div>
+    <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">${new Date(sig.time).toLocaleString('vi-VN')}</div>
+  </div>
+</div>
+${compact?'':`
+<div class="sig-2col">
+  <div class="sig-box"><div class="sig-lbl">Liquidity Sweep</div><div class="sig-val" style="color:${C}">${sig.sweep.type==='BSL'?'Buy-Side':'Sell-Side'}</div><div class="sig-sub">@ $${sig.sweep.swept.toFixed(2)}</div></div>
+  <div class="sig-box"><div class="sig-lbl">Fair Value Gap</div><div class="sig-val" style="color:${C}">${bull?'Bullish':'Bearish'} FVG</div><div class="sig-sub">$${sig.fvg.bot.toFixed(2)}–$${sig.fvg.top.toFixed(2)}</div></div>
+</div>
+<div style="display:flex;gap:6px;align-items:center">
+  <div style="flex:1;padding:7px 9px;background:${bg};border-radius:7px;font-size:10px;font-family:var(--mono);color:#999">
+    ${sig.ifvgConfirmed?`✅ iFVG xác nhận — ${bull?'LONG':'SHORT'}, SL $${sig.sweep.swept.toFixed(2)}`:`⏳ Đợi tap vào FVG $${sig.fvg.bot.toFixed(2)}–$${sig.fvg.top.toFixed(2)}`}
+  </div>
+  <button class="btn btn-sm" onclick="fillRRFromSignal(st.signals.find(s=>s.id===${sig.id}))" style="font-size:10px;padding:5px 8px">📐 R/R</button>
+</div>`}
+</div>`;
+}
+
+// ═══════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════
+function render(){
+  const sm=SM[st.status]||SM.idle;
+  const sb=sessionBadge();
+  const sigCount=st.signals.length;
+
+  const header=`
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-name">XAU/USD ICT Scanner</div>
+      <div class="logo-sub">${new Date().toLocaleDateString('vi-VN')} — Liquidity Swing</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <div class="badge" style="color:${sb.color};background:${sb.bg};border-color:${sb.border}">${sb.name} ${vnHour()}:00h</div>
+    <div>
+      <div class="price-val" style="color:${st.priceDir==='up'?'#1D9E75':st.priceDir==='down'?'#D85A30':'var(--text)'}">${st.price?'$'+st.price.toFixed(2):'——'}</div>
+      <div class="price-t">${st.lastCheck?st.lastCheck.toLocaleTimeString('vi-VN'):''}</div>
+    </div>
+    <div class="dot-wrap">
+      <div class="dot ${st.running?'pulse':''}" style="background:${sm.dot}"></div>
+      <span style="font-size:10px;color:${sm.dot};font-family:var(--mono)">${sm.label}</span>
+    </div>
+    <div style="display:flex;gap:5px">
+      <button class="btn btn-sm" onclick="check()">↺</button>
+      ${st.running?`<button class="btn btn-stop btn-sm" onclick="stop()">■ Dừng</button>`:`<button class="btn btn-gold btn-sm" onclick="start()">▶ Bắt đầu</button>`}
+    </div>
+  </div>
+</div>`;
+
+  const tabs=`
+<div class="tabs">
+  ${[
+    ['setup','⚙ Cài đặt'],
+    ['chart',`📈 Chart`],
+    ['signals',`⚡ Tín hiệu${sigCount?` (${sigCount>99?'99+':sigCount})`:''}`],
+    ['rr','📐 R/R Calc'],
+    ['history',`📋 Lịch sử${sigCount?' ('+sigCount+')':''}`],
+    ['calendar',`📅 Tin tức${st.calEvents.length?' ('+st.calEvents.length+')':''}`],
+    ['log','🖥 Log']
+  ].map(([k,l])=>`<button class="tab ${st.tab===k?'on':''}" onclick="switchTab('${k}')">${l}</button>`).join('')}
+</div>`;
+
+  let body='';
+
+  // ── SETUP ──
+  if(st.tab==='setup'){
+    body=`<div class="content">
+<div class="sess-grid">
+${Object.entries(SESS).map(([k,s])=>`
+<div class="sess-card" style="background:${s.bg};border-color:${s.border}">
+  <div style="font-weight:700;font-size:11px;color:${s.color}">${s.name}</div>
+  <div style="font-size:10px;font-family:var(--mono);color:#777;margin-top:2px">${s.label}</div>
+  <div style="font-size:10px;font-family:var(--mono);color:#484848">${s.open}:00–${k==='us'?'03:00':s.close+':00'}</div>
+  <div style="font-size:10px;margin-top:4px;font-weight:700;color:${getSession()===k?'#1D9E75':'#333'}">${getSession()===k?'● Mở':'○'}</div>
+</div>`).join('')}
+</div>
+
+<div class="card">
+  <div class="card-head">${accentBar('var(--gold)')} Twelve Data — Nến XAUUSD</div>
+  <div class="card-body">
+    <div class="row"><label>API Key</label><input type="password" placeholder="twelvedata.com → free API key" value="${st.tdKey}" oninput="st.tdKey=this.value"></div>
+    <div class="row">
+      <label>Khung nến</label>
+      <select onchange="st.tf=this.value" style="width:100px">${['5min','15min','30min','1h','4h'].map(v=>`<option value="${v}"${st.tf===v?' selected':''}>${v}</option>`).join('')}</select>
+    </div>
+    <div class="row"><label>Quét mỗi (phút)</label><input type="number" min="1" max="60" value="${st.pollMin}" oninput="st.pollMin=this.value" style="width:70px"></div>
+    <div class="row">
+      <label>Chỉ quét trong phiên</label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;font-family:var(--mono)">
+        <input type="checkbox" ${st.sessionOnly?'checked':''} onchange="st.sessionOnly=this.checked" style="width:auto;accent-color:var(--gold)"> Á + Âu + Mỹ
+      </label>
+    </div>
+    <div class="hint">Đăng ký free tại twelvedata.com → Dashboard → API Keys (800 req/ngày)</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">${accentBar('#378ADD')} Lịch kinh tế — ForexFactory</div>
+  <div class="card-body">
+    <button class="btn btn-sm" onclick="fetchCalendar()" style="align-self:flex-start">📅 Tải lịch ngay</button>
+    <div class="hint">Không cần API key. Backend server tự fetch ForexFactory.<br>FOMC, CPI, NFP, PCE, GDP, ECB, BoE... tuần này + tuần sau, giờ VN.</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-head">${accentBar('#444')} Signal History</div>
+  <div class="card-body">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--text2)">${sigCount} signal đã lưu trong localStorage</span>
+      <button class="btn btn-sm" onclick="if(confirm('Xoá toàn bộ lịch sử signal?')){st.signals=[];saveSignals();render()}" style="border-color:rgba(216,90,48,.3);color:var(--red);font-size:10px">🗑 Xoá tất cả</button>
+    </div>
+    <div class="hint">Signal tự động lưu, tắt mở browser vẫn còn. Tối đa 200 signal gần nhất.</div>
+  </div>
+</div>
+</div>`;
+  }
+
+  // ── CHART ──
+  if(st.tab==='chart'){
+    body=`<div class="content">
+<div style="display:flex;gap:7px;align-items:center">
+  <button class="btn btn-sm" onclick="loadChartData()">↺ Tải chart</button>
+  <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Lightweight Charts • nến thật + FVG zones + signal markers</span>
+</div>
+<div id="chart-wrap"><div id="lw-chart"></div>
+<div class="chart-legend">
+  <div class="chart-leg-item">▲ Bullish</div>
+  <div class="chart-leg-item">▼ Bearish</div>
+  <div class="chart-leg-item">·· Sweep</div>
+  <div class="chart-leg-item">-- FVG</div>
+</div>
+</div>
+<div class="hint">Mũi tên = nến phát hiện signal. Đường đứt = biên FVG. Chấm vàng = mức sweep liquidity.</div>
+</div>`;
+  }
+
+  // ── SIGNALS ──
+  if(st.tab==='signals'){
+    const recent=st.signals.slice(0,20);
+    body=!recent.length
+      ?`<div class="empty">⚡<br><br>Chưa có tín hiệu.<br>Nhấn ▶ Bắt đầu để quét.</div>`
+      :`<div class="content">${recent.map(s=>sigCardHTML(s)).join('')}</div>`;
+  }
+
+  // ── R/R CALCULATOR ──
+  if(st.tab==='rr'){
+    const result=calcRR();
+    const rr=st.rr;
+    body=`<div class="content">
+<div class="card">
+  <div class="card-head">${accentBar('var(--gold)')} Thông số lệnh</div>
+  <div class="card-body">
+    <div class="row"><label>Entry</label><input type="number" step="0.01" placeholder="Giá vào lệnh..." value="${rr.entry}" oninput="st.rr.entry=this.value;renderRR()"></div>
+    <div class="row"><label>Stop Loss</label><input type="number" step="0.01" placeholder="Giá SL..." value="${rr.sl}" oninput="st.rr.sl=this.value;renderRR()"></div>
+    <div class="row"><label>Take Profit</label><input type="number" step="0.01" placeholder="Giá TP..." value="${rr.tp}" oninput="st.rr.tp=this.value;renderRR()"></div>
+    <div style="height:1px;background:var(--border);margin:4px 0"></div>
+    <div class="row"><label>Tài khoản ($)</label><input type="number" step="100" value="${rr.account}" oninput="st.rr.account=this.value;lsSave('account',this.value);renderRR()"></div>
+    <div class="row"><label>Rủi ro / lệnh (%)</label><input type="number" step="0.1" min="0.1" max="10" value="${rr.riskPct}" oninput="st.rr.riskPct=this.value;lsSave('riskPct',this.value);renderRR()"></div>
+  </div>
+</div>
+
+<div id="rr-result-area">
+${result===null?`<div class="hint" style="text-align:center;padding:20px">Nhập Entry, SL và TP để tính toán</div>`:renderRRResult(result)}
+</div>
+
+<div class="card">
+  <div class="card-head">${accentBar('#555')} Fill từ signal gần nhất</div>
+  <div class="card-body">
+    ${st.signals.length===0?`<div style="font-size:11px;color:var(--text3)">Chưa có signal nào</div>`
+    :st.signals.slice(0,3).map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <span style="font-weight:700;font-size:11px;color:${s.sweep.dir==='bull'?'#1D9E75':'#D85A30'}">${s.sweep.dir==='bull'?'BULL':'BEAR'}</span>
+        <span style="font-size:10px;font-family:var(--mono);color:var(--text2);margin-left:8px">$${s.price.toFixed(2)} — ${new Date(s.time).toLocaleTimeString('vi-VN')}</span>
+      </div>
+      <button class="btn btn-sm" onclick="fillRRFromSignal(st.signals[${st.signals.indexOf(s)}])" style="font-size:10px">Fill ↗</button>
+    </div>`).join('')}
+  </div>
+</div>
+</div>`;
+  }
+
+  // ── HISTORY ──
+  if(st.tab==='history'){
+    const filters=[['all','Tất cả'],['bull','Bullish'],['bear','Bearish'],['ifvg','iFVG ✓']];
+    const filtered=st.signals.filter(s=>{
+      if(st.histFilter==='bull')return s.sweep.dir==='bull';
+      if(st.histFilter==='bear')return s.sweep.dir==='bear';
+      if(st.histFilter==='ifvg')return s.ifvgConfirmed;
+      return true;
+    });
+    // Stats
+    const total=st.signals.length;
+    const bulls=st.signals.filter(s=>s.sweep.dir==='bull').length;
+    const bears=st.signals.filter(s=>s.sweep.dir==='bear').length;
+    const ifvgs=st.signals.filter(s=>s.ifvgConfirmed).length;
+
+    body=`<div class="content">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px">
+  ${[['Tổng','#aaa',total],['Bullish','#1D9E75',bulls],['Bearish','#D85A30',bears],['iFVG ✓','#EF9F27',ifvgs]].map(([l,c,v])=>`
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center">
+    <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:4px">${l}</div>
+    <div style="font-size:20px;font-weight:700;font-family:var(--mono);color:${c}">${v}</div>
+  </div>`).join('')}
+</div>
+
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+  ${filters.map(([k,l])=>`<button class="btn btn-sm ${st.histFilter===k?'btn-gold':''}" onclick="st.histFilter='${k}';render()">${l}</button>`).join('')}
+  <button class="btn btn-sm" style="margin-left:auto" onclick="if(confirm('Xoá toàn bộ?')){st.signals=[];saveSignals();render()}">🗑 Xoá</button>
+</div>
+
+${filtered.length===0
+  ?`<div class="empty">Không có signal phù hợp.</div>`
+  :filtered.map(s=>{
+    const bull=s.sweep.dir==='bull';
+    const C=bull?'#1D9E75':'#D85A30';
+    const bdr=bull?'rgba(29,158,117,.25)':'rgba(216,90,48,.25)';
+    const sInfo=SESS[s.sess]||{};
+    return`<div class="hist-item" style="border-color:${bdr};border-left:3px solid ${C}">
+  <div class="hist-dot" style="background:${C}"></div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:700;font-size:11px;color:${C}">${bull?'BULL':'BEAR'} ${s.sweep.type}</div>
+    <div style="font-size:9px;font-family:var(--mono);color:var(--text3)">${new Date(s.time).toLocaleString('vi-VN')} • ${sInfo.name||s.sess} • ${s.tf||''}</div>
+  </div>
+  <div style="text-align:right;flex-shrink:0">
+    <div style="font-family:var(--mono);font-weight:700;font-size:13px">$${s.price.toFixed(2)}</div>
+    <div style="font-size:9px;color:var(--text3)">SL $${s.sweep.swept.toFixed(2)}</div>
+  </div>
+  ${s.ifvgConfirmed?`<span style="font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:10px;background:rgba(239,159,39,.12);color:var(--gold);flex-shrink:0">iFVG✓</span>`:''}
+</div>`;}).join('')}
+</div>`;
+  }
+
+  // ── CALENDAR ──
+  if(st.tab==='calendar'){
+    if(st.calLoading){
+      body=`<div class="empty">⏳<br><br>Đang tải lịch kinh tế...</div>`;
+    }else if(st.calError){
+      body=`<div class="content">
+<div style="padding:11px 13px;background:rgba(216,90,48,.09);border:1px solid rgba(216,90,48,.28);border-radius:10px;font-family:var(--mono);font-size:11px;color:var(--red);line-height:1.8">${st.calError}</div>
+<button class="btn btn-sm" onclick="fetchCalendar()">↺ Thử lại</button>
+</div>`;
+    }else if(!st.calEvents.length){
+      body=`<div class="empty">📅<br><br>Chưa có lịch kinh tế.<br><br><button class="btn" onclick="fetchCalendar()">📅 Tải ngay</button></div>`;
+    }else{
+      const byDate={};
+      st.calEvents.forEach(e=>{if(e._date){if(!byDate[e._date])byDate[e._date]=[];byDate[e._date].push(e);}});
+      const today=new Date().toISOString().split('T')[0];
+      const RC={high:'#D85A30',medium:'#EF9F27',low:'#333'};
+      const RL={high:'⚠ Cao',medium:'~ Vừa',low:''};
+      const CC={'USD':'rgba(55,138,221,.1)','EUR':'rgba(29,158,117,.1)','GBP':'rgba(216,90,48,.09)','JPY':'rgba(186,117,23,.09)'};
+      const CB={'USD':'rgba(55,138,221,.28)','EUR':'rgba(29,158,117,.28)','GBP':'rgba(216,90,48,.22)','JPY':'rgba(186,117,23,.22)'};
+      body=`<div class="content">
+<div style="display:flex;gap:7px;align-items:center">
+  <button class="btn btn-sm" onclick="fetchCalendar()">↺ Cập nhật</button>
+  <span style="font-size:10px;font-family:var(--mono);color:var(--text3)">ForexFactory • ${st.calEvents.length} sự kiện • giờ VN</span>
+</div>
+${Object.entries(byDate).map(([date,evts])=>{
+  const d=new Date(date+'T00:00:00Z');
+  const isToday=date===today;
+  const dayStr=d.toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit'});
+  return`<div class="cal-day">
+<div class="cal-day-head">
+  ${isToday?`<span style="background:var(--gold);color:#000;padding:1px 7px;border-radius:4px;font-size:9px;font-weight:700">HÔM NAY</span>`:'📅'}
+  <span>${dayStr}</span><span style="color:var(--text3);margin-left:auto">${evts.length} sự kiện</span>
+</div>
+${evts.map(e=>{
+  const risk=goldRisk(e);
+  const cur=(e.country||'').toUpperCase();
+  const cbg=CC[cur]||'rgba(255,255,255,.02)';
+  const cbdr=CB[cur]||'rgba(255,255,255,.07)';
+  const hasData=e.actual||e.forecast||e.previous;
+  return`<div class="cal-evt">
+  <div class="cal-time">${e._vnTime||'--'}</div>
+  <div class="cal-dot" style="background:${RC[risk]}"></div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:11px;color:${risk==='high'?'#e2e2e2':risk==='medium'?'#bbb':'#666'};line-height:1.4">${e.title||'—'}</div>
+    ${hasData?`<div style="font-size:9px;font-family:var(--mono);color:#484848;margin-top:2px">${e.actual?`TT: <span style="color:${RC[risk]}">${e.actual}</span>  `:''  }${e.forecast?`DB: <span style="color:#666">${e.forecast}</span>  `:''}${e.previous?`Trước: ${e.previous}`:''}</div>`:''}
+  </div>
+  <span style="font-size:9px;font-family:var(--mono);padding:1px 6px;border-radius:10px;background:${cbg};border:0.5px solid ${cbdr};color:${CB[cur]?'#888':'#444'};flex-shrink:0">${cur}</span>
+  ${risk!=='low'?`<span style="font-size:9px;font-family:var(--mono);font-weight:700;color:${RC[risk]};flex-shrink:0">${RL[risk]}</span>`:''}
+</div>`;}).join('')}
+</div>`;}).join('')}
+</div>`;
+    }
+  }
+
+  // ── LOG ──
+  if(st.tab==='log'){
+    const LC={signal:'#EF9F27',error:'#D85A30',success:'#1D9E75',info:'#404040'};
+    const LB={signal:'rgba(239,159,39,.35)',error:'rgba(216,90,48,.35)',success:'rgba(29,158,117,.35)',info:'rgba(255,255,255,.06)'};
+    body=!st.logs.length
+      ?`<div class="empty">Chưa có log.</div>`
+      :`<div style="padding:9px 13px;display:flex;flex-direction:column;gap:1px">${st.logs.map(l=>`
+<div class="log-line" style="border-left-color:${LB[l.type]||LB.info}">
+  <span class="log-ts">${l.ts}</span>
+  <span style="color:${LC[l.type]||LC.info}">${l.msg}</span>
+</div>`).join('')}</div>`;
+  }
+
+  document.getElementById('app').innerHTML=header+tabs+`<div>${body}</div>`;
+
+  if(st.tab==='chart'){
+    requestAnimationFrame(()=>{
+      if(st.chartCandles.length)buildChart(st.chartCandles,st.signals);
+      else loadChartData();
+    });
+  }
+}
+
+function renderRRResult(r){
+  if(!r)return'';
+  const C=r.bull?'#1D9E75':'#D85A30';
+  const validWarn=!r.validDir?`<div style="padding:8px 10px;background:rgba(216,90,48,.1);border-radius:8px;font-size:10px;font-family:var(--mono);color:var(--red);margin-bottom:8px">⚠ SL và hướng lệnh có vẻ không khớp. Kiểm tra lại.</div>`:'';
+  const rrColor=r.rrRatio>=2?'#1D9E75':r.rrRatio>=1?'#EF9F27':'#D85A30';
+  return`${validWarn}
+<div style="padding:13px;background:var(--bg2);border-radius:12px;border:1px solid ${r.bull?'rgba(29,158,117,.25)':'rgba(216,90,48,.25)'};border-left:3px solid ${C}">
+  <div style="font-weight:700;font-size:11px;color:${C};margin-bottom:10px">${r.bull?'LONG ▲':'SHORT ▼'} — XAU/USD</div>
+  <div class="rr-result">
+    <div class="rr-metric" style="border-color:${rrColor}22">
+      <div class="rr-metric-label">Risk / Reward</div>
+      <div class="rr-metric-val" style="color:${rrColor}">1 : ${r.rrRatio.toFixed(2)}</div>
+      <div class="rr-metric-sub">${r.rrRatio>=2?'✅ Tốt':r.rrRatio>=1?'⚠ Chấp nhận được':'❌ Quá thấp'}</div>
+    </div>
+    <div class="rr-metric">
+      <div class="rr-metric-label">Lot size</div>
+      <div class="rr-metric-val">${r.lotSize.toFixed(2)}</div>
+      <div class="rr-metric-sub">lot chuẩn (100 oz)</div>
+    </div>
+    <div class="rr-metric">
+      <div class="rr-metric-label">Rủi ro</div>
+      <div class="rr-metric-val" style="color:#D85A30">$${r.dollarRisk.toFixed(0)}</div>
+      <div class="rr-metric-sub">${st.rr.riskPct}% tài khoản</div>
+    </div>
+    <div class="rr-metric">
+      <div class="rr-metric-label">Tiềm năng lời</div>
+      <div class="rr-metric-val" style="color:#1D9E75">$${r.dollarProfit.toFixed(0)}</div>
+      <div class="rr-metric-sub">nếu hit TP</div>
+    </div>
+    <div class="rr-metric">
+      <div class="rr-metric-label">SL distance</div>
+      <div class="rr-metric-val">$${r.slDist.toFixed(2)}</div>
+      <div class="rr-metric-sub">${(r.slDist*10).toFixed(0)} pips</div>
+    </div>
+    <div class="rr-metric">
+      <div class="rr-metric-label">TP distance</div>
+      <div class="rr-metric-val">$${r.tpDist.toFixed(2)}</div>
+      <div class="rr-metric-sub">${(r.tpDist*10).toFixed(0)} pips</div>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderRR(){
+  const area=document.getElementById('rr-result-area');
+  if(!area)return;
+  const result=calcRR();
+  area.innerHTML=result===null?`<div class="hint" style="text-align:center;padding:20px">Nhập Entry, SL và TP để tính toán</div>`:renderRRResult(result);
+}
+
+function switchTab(k){st.tab=k;render();}
+
+// ─ Init ─
+render();
+// Auto-fetch calendar on load
+setTimeout(fetchCalendar, 1500);
+</script>
+</body>
+</html>
